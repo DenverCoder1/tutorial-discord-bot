@@ -12,9 +12,9 @@ def main():
         print(f"{client.user.name} has connected to Discord.")
 
     # @client.event
-    # async def on_message(ctx):
-    #     if (ctx.content.startswith("Hello")):
-    #         await ctx.channel.send(f"Hi {ctx.author.mention}!")
+    # async def on_message(message):
+    #     if (message.content.startswith("Hello")):
+    #         await message.channel.send(f"Hi {message.author.mention}!")
 
     @client.command()
     async def ping(ctx):
