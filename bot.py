@@ -1,5 +1,5 @@
 import os
-from dotenv.main import load_dotenv
+from dotenv import load_dotenv
 from discord.ext import commands
 
 def main():
