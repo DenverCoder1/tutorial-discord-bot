@@ -1,5 +1,10 @@
 # Tutorial Discord Bot
 
+<p align="left">
+  <a href="https://discord.gg/fPrdqh3Zfu" alt="Dev Pro Tips Discussion & Support Server">
+    <img src="https://img.shields.io/discord/819650821314052106?color=7289DA&logo=discord&logoColor=white&style=for-the-badge"/></a>
+</p>
+
 This is the source code for the Bot features I will be showing you how to make on YouTube.
 
 Check out the playlist [here](https://www.youtube.com/playlist?list=PL9YUC9AZJGFG6larkQJYio_f0V-O1NRjy).
