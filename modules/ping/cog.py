@@ -1,4 +1,4 @@
-from discord.ext import commands
+from nextcord.ext import commands
 
 class Ping(commands.Cog, name="Ping"):
     """Receives ping commands"""
