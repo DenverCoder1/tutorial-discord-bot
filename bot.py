@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from discord.ext import commands
+from nextcord.ext import commands
 
 def main():
     client = commands.Bot(command_prefix="?")
