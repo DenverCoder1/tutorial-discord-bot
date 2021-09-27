@@ -16,9 +16,10 @@ class NPuzzleCog(commands.Cog, name="N-Puzzle"):
         Starts a n-puzzle game, optionally with a given size (2-5).
         
         Example:
+        ```
         ?npuzzle - starts a 4x4 puzzle
         ?npuzzle 3 - starts a 3x3 puzzle
-
+        ```
         The goal is to get the numbers in order 1-n with the empty tile in the top left corner.
         """
         if not (2 <= size <= 5):

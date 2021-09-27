@@ -11,12 +11,6 @@ class HelpCog(commands.Cog, name="Help"):
     def __init__(self, bot: commands.Bot):
         self._original_help_command = bot.help_command
         self._bot = bot
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        # skip function if already has run
-        if isinstance(self._bot.help_command, SelectHelpCommand):
-            return
         self._bot.help_command = SelectHelpCommand()
         self._bot.help_command.cog = self
 
