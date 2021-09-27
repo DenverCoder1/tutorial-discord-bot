@@ -31,6 +31,9 @@ class HelpView(nextcord.ui.View):
         self.clear_items()
         await self._help_command.response.edit(view=self)
 
+    async def interaction_check(self, interaction: nextcord.Interaction) -> bool:
+        return self._help_command.context.author == interaction.user
+
 
 class SelectHelpCommand(commands.MinimalHelpCommand):
     """Custom help command override using embeds"""
