@@ -3,8 +3,10 @@ from nextcord.ext import commands
 class Ping(commands.Cog, name="Ping"):
     """Receives ping commands"""
 
+    COG_EMOJI = "🏓"
+
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
+        self._bot = bot
 
     @commands.command()
     async def ping(self, ctx: commands.Context):
