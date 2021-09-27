@@ -1,4 +1,4 @@
-from typing import Iterable, Optional, Set
+from typing import Optional, Set
 import nextcord
 from nextcord.ext import commands
 
@@ -39,6 +39,7 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
     """Custom help command override using embeds"""
 
     async def _cog_select_options(self) -> list[nextcord.SelectOption]:
+        """Returns a list of select options including 'Home' and all cogs available to the user"""
         options: list[nextcord.SelectOption] = []
         # add the home option
         options.append(nextcord.SelectOption(
@@ -62,9 +63,19 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
         mapping: Optional[dict] = None, set_author: bool = False
     ):
         """
-        Returns an embed for a command or set of commands, for example in a group or cog
+        Returns an embed for a command, set of commands, or cogs in a bot
 
         Arguments
+        ---------
+            title: title of the embed
+            description: optional description of the embed
+            command_set: set of commands for displaying cog or group command details
+            mapping: mapping of cogs to commands they contain for bot help
+            set_author: whether or not to display the bot's name and avatar at the top
+        
+        Returns
+        -------
+        Generated help embed with command details
         """
         embed = nextcord.Embed(title=title)
         # set description of bot, cog, or single command help
@@ -104,6 +115,9 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
         return embed
 
     async def _bot_help_embed(self, mapping: dict):
+        """
+        Returns an embed with a list of commands in each cog
+        """
         return await self._help_embed(
             title="Bot Commands",
             description=self.context.bot.description,
@@ -113,7 +127,7 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
 
     async def _cog_help_embed(self, cog: commands.Cog):
         """
-        Returns an embed for a cog
+        Returns an embed with details for all commands in a cog
         """
         emoji = getattr(cog, 'COG_EMOJI', None)
         name = f"{emoji} {cog.qualified_name}" if emoji else cog.qualified_name
@@ -125,7 +139,9 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
 
     async def _command_help_embed(self, command: commands.Command):
         """
-        Returns an embed for a command or command group
+        Returns an embed for a single command or details for all commands in a Group
+
+        Note: command can be a single Command or a command Group, which is a subclass of Command
         """
         emoji = getattr(command.cog, "COG_EMOJI", None)
         command_set = (
@@ -144,20 +160,20 @@ class SelectHelpCommand(commands.MinimalHelpCommand):
         return f"Use {self.context.clean_prefix}{self.invoked_with} [command] for more info on a command."
 
     def get_command_signature(self, command: commands.core.Command):
-        """Retrieves the signature portion of the help page."""
+        """Retrieves the signature portion of the help page"""
         return f"{command.qualified_name} {command.signature}"
 
     async def send_bot_help(self, mapping: dict):
-        """implements bot command help page"""
+        """Implements bot command help page"""
         options = await self._cog_select_options()
         self.response = await self.get_destination().send(embed=await self._bot_help_embed(mapping), view=HelpView(self, options))
 
     async def send_cog_help(self, cog: commands.Cog):
-        """implements cog help page"""
+        """Implements cog help page"""
         await self.get_destination().send(embed=await self._cog_help_embed(cog))
 
     async def send_command_help(self, command: commands.Command):
-        """implements help page for commands and command groups"""
+        """Implements help page for commands and command groups"""
         await self.get_destination().send(embed=await self._command_help_embed(command))
 
     # Use the same function as command help for group help
