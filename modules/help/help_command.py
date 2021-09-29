@@ -4,6 +4,7 @@ from nextcord.ext import commands
 
 
 class HelpDropdown(nextcord.ui.Select):
+    """Dropdown for the help menu"""
     def __init__(self, help_command: "SelectHelpCommand", options: list[nextcord.SelectOption]):
         super().__init__(placeholder='Choose a category...',
                          min_values=1, max_values=1, options=options)
@@ -21,6 +22,7 @@ class HelpDropdown(nextcord.ui.Select):
 
 
 class HelpView(nextcord.ui.View):
+    """View for the help dropdown"""
     def __init__(self, help_command: "SelectHelpCommand", options: list[nextcord.SelectOption], *, timeout: Optional[float] = 120.0):
         super().__init__(timeout=timeout)
         self._help_command = help_command
@@ -36,7 +38,7 @@ class HelpView(nextcord.ui.View):
 
 
 class SelectHelpCommand(commands.MinimalHelpCommand):
-    """Custom help command override using embeds"""
+    """Custom help command override using embeds and a select menu"""
 
     async def _cog_select_options(self) -> list[nextcord.SelectOption]:
         """Returns a list of select options including 'Home' and all cogs available to the user"""
