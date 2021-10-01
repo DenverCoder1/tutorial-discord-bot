@@ -1,32 +1,27 @@
 from typing import Optional, Set
-import nextcord
 from nextcord.ext import commands
-
+from nextcord import Embed
+import nextcord
 
 class HelpDropdown(nextcord.ui.Select):
-    """Dropdown for the help menu"""
-    def __init__(self, help_command: "SelectHelpCommand", options: list[nextcord.SelectOption]):
-        super().__init__(placeholder='Choose a category...',
-                         min_values=1, max_values=1, options=options)
+    def __init__(self, help_command: "MyHelpCommand", options: list[nextcord.SelectOption]):
+        super().__init__(placeholder="Choose a category...", min_values=1, max_values=1, options=options)
         self._help_command = help_command
 
     async def callback(self, interaction: nextcord.Interaction):
         embed = (
-            # home page selected
-            await self._help_command._bot_help_embed(self._help_command.get_bot_mapping())
-            if self.values[0] == self.options[0].value
-            # cog page selected
-            else await self._help_command._cog_help_embed(self._help_command.context.bot.get_cog(self.values[0]))
+            await self._help_command.cog_help_embed(self._help_command.context.bot.get_cog(self.values[0]))
+            if self.values[0] != self.options[0].value
+            else await self._help_command.bot_help_embed(self._help_command.get_bot_mapping())
         )
         await interaction.response.edit_message(embed=embed)
 
 
 class HelpView(nextcord.ui.View):
-    """View for the help dropdown"""
-    def __init__(self, help_command: "SelectHelpCommand", options: list[nextcord.SelectOption], *, timeout: Optional[float] = 120.0):
+    def __init__(self, help_command: "MyHelpCommand", options: list[nextcord.SelectOption], *, timeout: Optional[float] = 120.0):
         super().__init__(timeout=timeout)
+        self.add_item(HelpDropdown(help_command, options))
         self._help_command = help_command
-        self.add_item(HelpDropdown(help_command=help_command, options=options))
 
     async def on_timeout(self):
         # remove dropdown from message on timeout
@@ -37,146 +32,104 @@ class HelpView(nextcord.ui.View):
         return self._help_command.context.author == interaction.user
 
 
-class SelectHelpCommand(commands.MinimalHelpCommand):
-    """Custom help command override using embeds and a select menu"""
+class MyHelpCommand(commands.MinimalHelpCommand):
+    def get_command_signature(self, command):
+        return f"{self.context.clean_prefix}{command.qualified_name} {command.signature}"
 
     async def _cog_select_options(self) -> list[nextcord.SelectOption]:
-        """Returns a list of select options including 'Home' and all cogs available to the user"""
         options: list[nextcord.SelectOption] = []
-        # add the home option
         options.append(nextcord.SelectOption(
-            emoji="🏠", label="Home", description="Return to home page"
+            label="Home",
+            emoji="🏠",
+            description="Go back to the main menu.",
         ))
-        # add options for each cog with available commands
-        for cog, commands in self.get_bot_mapping().items():
-            if not await self.filter_commands(commands, sort=True):
+
+        for cog, command_set in self.get_bot_mapping().items():
+            filtered = await self.filter_commands(command_set, sort=True)
+            if not filtered:
                 continue
-            # add cog to select options
+            emoji = getattr(cog, "COG_EMOJI", None)
             options.append(nextcord.SelectOption(
-                label="No Category" if cog is None else cog.qualified_name,
-                description=cog.description if cog and cog.description else None,
-                emoji=getattr(cog, 'COG_EMOJI', None),
+                label=cog.qualified_name if cog else "No Category",
+                emoji=emoji,
+                description=cog.description[:100] if cog and cog.description else None
             ))
+
         return options
 
     async def _help_embed(
-        self, title: str, description: Optional[str] = None,
-        command_set: Optional[Set[commands.Command]] = None,
-        mapping: Optional[dict] = None, set_author: bool = False
-    ):
-        """
-        Returns an embed for a command, set of commands, or cogs in a bot
-
-        Arguments
-        ---------
-            title: title of the embed
-            description: optional description of the embed
-            command_set: set of commands for displaying cog or group command details
-            mapping: mapping of cogs to commands they contain for bot help
-            set_author: whether or not to display the bot's name and avatar at the top
-        
-        Returns
-        -------
-        Generated help embed with command details
-        """
-        embed = nextcord.Embed(title=title)
-        # set description of bot, cog, or single command help
+        self, title: str, description: Optional[str] = None, mapping: Optional[str] = None,
+        command_set: Optional[Set[commands.Command]] = None, set_author: bool = False
+    ) -> Embed:
+        embed = Embed(title=title)
         if description:
             embed.description = description
-        # set author to show bot info for bot help page
         if set_author:
             avatar = self.context.bot.user.avatar or self.context.bot.user.default_avatar
-            embed.set_author(name=self.context.bot.user.name,
-                             icon_url=avatar.url)
-        # show help for all commands in a set
+            embed.set_author(name=self.context.bot.user.name, icon_url=avatar.url)
         if command_set:
+            # show help about all commands in the set
             filtered = await self.filter_commands(command_set, sort=True)
             for command in filtered:
                 embed.add_field(
-                    name=f"`{self.context.clean_prefix}{self.get_command_signature(command)}`",
+                    name=self.get_command_signature(command),
                     value=command.short_doc or "...",
-                    inline=False,
+                    inline=False
                 )
-        # show brief list of commands in each cog
         elif mapping:
-            # add cogs with command names as fields
+            # add a short description of commands in each cog
             for cog, command_set in mapping.items():
                 filtered = await self.filter_commands(command_set, sort=True)
                 if not filtered:
                     continue
-                name = "No Category" if cog is None else cog.qualified_name
-                emoji = getattr(cog, 'COG_EMOJI', None)
+                name = cog.qualified_name if cog else "No category"
+                emoji = getattr(cog, "COG_EMOJI", None)
                 cog_label = f"{emoji} {name}" if emoji else name
-                # \u2002 = en space
+                # \u2002 is an en-space
                 cmd_list = "\u2002".join(
                     f"`{self.context.clean_prefix}{cmd.name}`" for cmd in filtered
                 )
-                value = f"{cog.description}\n{cmd_list}" if cog and cog.description else cmd_list
+                value = (
+                    f"{cog.description}\n{cmd_list}"
+                    if cog and cog.description
+                    else cmd_list
+                )
                 embed.add_field(name=cog_label, value=value)
-        embed.set_footer(text=self.get_ending_note())
         return embed
 
-    async def _bot_help_embed(self, mapping: dict):
-        """
-        Returns an embed with a list of commands in each cog
-        """
+    async def bot_help_embed(self, mapping: dict) -> Embed:
         return await self._help_embed(
             title="Bot Commands",
             description=self.context.bot.description,
             mapping=mapping,
             set_author=True,
         )
-
-    async def _cog_help_embed(self, cog: commands.Cog):
-        """
-        Returns an embed with details for all commands in a cog
-        """
-        emoji = getattr(cog, 'COG_EMOJI', None)
-        name = f"{emoji} {cog.qualified_name}" if emoji else cog.qualified_name
-        return await self._help_embed(
-            title=f"{name} Commands",
-            description=cog.description,
-            command_set=cog.get_commands(),
-        )
-
-    async def _command_help_embed(self, command: commands.Command):
-        """
-        Returns an embed for a single command or details for all commands in a Group
-
-        Note: command can be a single Command or a command Group, which is a subclass of Command
-        """
-        emoji = getattr(command.cog, "COG_EMOJI", None)
-        command_set = (
-            command.commands
-            if isinstance(command, commands.Group)
-            else None
-        )
-        return await self._help_embed(
-            title=f"{emoji} {command.qualified_name}" if emoji else command.qualified_name,
-            description=command.help,
-            command_set=command_set,
-        )
-
-    def get_ending_note(self):
-        """Returns note to display at the bottom"""
-        return f"Use {self.context.clean_prefix}{self.invoked_with} [command] for more info on a command."
-
-    def get_command_signature(self, command: commands.core.Command):
-        """Retrieves the signature portion of the help page"""
-        return f"{command.qualified_name} {command.signature}"
-
+    
     async def send_bot_help(self, mapping: dict):
-        """Implements bot command help page"""
+        embed = await self.bot_help_embed(mapping)
         options = await self._cog_select_options()
-        self.response = await self.get_destination().send(embed=await self._bot_help_embed(mapping), view=HelpView(self, options))
-
-    async def send_cog_help(self, cog: commands.Cog):
-        """Implements cog help page"""
-        await self.get_destination().send(embed=await self._cog_help_embed(cog))
+        self.response = await self.get_destination().send(embed=embed, view=HelpView(self, options))
 
     async def send_command_help(self, command: commands.Command):
-        """Implements help page for commands and command groups"""
-        await self.get_destination().send(embed=await self._command_help_embed(command))
+        emoji = getattr(command.cog, "COG_EMOJI", None)
+        embed = await self._help_embed(
+            title=f"{emoji} {command.qualified_name}" if emoji else command.qualified_name,
+            description=command.help,
+            command_set=command.commands if isinstance(command, commands.Group) else None
+        )
+        await self.get_destination().send(embed=embed)
+
+    async def cog_help_embed(self, cog: commands.Cog) -> Embed:
+        emoji = getattr(cog, "COG_EMOJI", None)
+        return await self._help_embed(
+            title=f"{emoji} {cog.qualified_name}" if emoji else cog.qualified_name,
+            description=cog.description,
+            command_set=cog.get_commands()
+        )
+
+    async def send_cog_help(self, cog: commands.Cog):
+        embed = await self.cog_help_embed(cog)
+        await self.get_destination().send(embed=embed)
 
     # Use the same function as command help for group help
     send_group_help = send_command_help
