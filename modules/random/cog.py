@@ -4,14 +4,19 @@ import random
 class Random(commands.Cog, name="Random"):
     """Returns random results"""
 
+    COG_EMOJI = "🎲"
+
     def __init__(self, bot: commands.Bot):
-        self.bot = bot
+        self._bot = bot
 
     @commands.command()
     async def roll(self, ctx: commands.Context, dice: str):
-        """Rolls a given amount of dice in the form _d_
+        """Rolls a given amount of dice in the form \_d\_
         
-        Example: ?roll 2d20
+        Example:
+        ```
+        ?roll 2d20
+        ```
         """
         try:
             rolls = ""
@@ -29,7 +34,10 @@ class Random(commands.Cog, name="Random"):
     async def choose(self, ctx: commands.Context, *args):
         """Chooses a random item from a list
         
-        Example: ?choose "First Option" "Second Option" "Third Option"
+        Example:
+        ```
+        ?choose "First Option" "Second Option" "Third Option"
+        ```
         """
         try:
             choice = random.choice(args)
