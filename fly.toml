@@ -1,0 +1,8 @@
+# fly.toml file generated for tutorial-bot on 2022-08-28T09:30:27-06:00
+
+app = "tutorial-bot"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[env]
